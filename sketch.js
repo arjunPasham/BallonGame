@@ -24,6 +24,8 @@ obsBottom2 = loadImage("assets/obsBottom2.png")
 obsBottom3 = loadImage("assets/obsBottom3.png")
 gameOverImg = loadImage("assets/gameOver.png")
 restartImg = loadImage("assets/restart.png")
+jumpSound = loadSound("assets/jump.mp3");
+dieSound = loadSound("assets/die.mp3");
 }
 
 function setup(){
@@ -32,7 +34,7 @@ function setup(){
 //background image
 bg = createSprite(165,485,1,1);
 bg.addImage(bgImg);
-bg.scale = 1.3
+bg.scale = 1.3;
 
 
 //creating top and bottom grounds
@@ -57,7 +59,7 @@ gameOver = createSprite(220,200);
 restart = createSprite(220,240);
 gameOver.addImage(gameOverImg);
 gameOver.scale = 0.5;
-restart.addImage(gameOverImg);
+restart.addImage(restartImg);
 restart.scale = 0.5;
 gameOver.visible = false;
 restart.visible = false
@@ -68,11 +70,13 @@ restart.visible = false
 function draw() {
   
   background("black");
+        if(gameState===PLAY){
+
         
           //making the hot air balloon jump
           if(keyDown("space")) {
             balloon.velocityY = -6 ;
-            
+            jumpSound.play();
           }
 
           //adding gravity
@@ -80,11 +84,41 @@ function draw() {
 
            
           Bar();
-   
+          spawnObstaclesTop();
+          spawnObstaclesBottom();
+
+          if(topObstacleGroup.isTouching(balloon) || balloon.isTouching(topGround)||balloon.isTouching(bottomGround)||bottomObstacleGroup.isTouching(balloon)){
+            gameState = END;
+            dieSound.play;
+          }
+        }
+
+        if(gameState===END){
+          gameOver.visible = true;
+          gameOver.depth = gameOver.depth+1;
+          restart.visible = true;
+          restart.depth = restart.depth+1;
+          balloon.velocityX = 0;
+          balloon.velocityY = 0;
+          topObstacleGroup.setVelocityXEach(0);
+          bottomObstacleGroup.setVelocityXEach(0);
+          barGroup.setVelocityXEach(0);
+
+          topObstacleGroup.setLifetimeEach(-1);
+          bottomObstacleGroup.setLifetimeEach(-1);
+          balloon.y = 200;
+
+          if(mousePressedOver(restart)){
+            reset();
+          }
+
+        }
+
         drawSprites();
+        Score();
        
         //spawning top obstacles
-      spawnObstaclesTop();
+      
 
       
 }
@@ -117,7 +151,42 @@ function spawnObstaclesTop()
    obstacleTop.lifetime = 100;
     
    balloon.depth = balloon.depth + 1;
-   
+   topObstacleGroup.add(obstacleTop);
+
+      }
+}
+function spawnObstaclesBottom() 
+{
+      if(World.frameCount % 60 === 0) {
+        obstacleBottom = createSprite(400,350,40,50);
+    
+    obstacleBottom.addImage(obsBottom1);
+    obstacleBottom.debug = true;
+
+    obstacleBottom.scale = 0.07;
+    obstacleBottom.velocityX = -4;
+
+    //random y positions for top obstacles
+    //obstacleTop.y = Math.round(random(10,100));
+
+    //generate random top obstacles
+    var rand = Math.round(random(1,2));
+    switch(rand) {
+      case 1: obstacleBottom.addImage(obsBottom1);
+              break;
+      case 2: obstacleBottom.addImage(obsBottom2);
+              break;
+      case 3: obstacleBottom.addImage(obsBottom3);
+              break;
+      default: break;
+    }
+
+     //assign lifetime to the variable
+   obstacleBottom.lifetime = 100;
+    
+   balloon.depth = balloon.depth + 1;
+   bottomObstacleGroup.add(obstacleBottom);
+
       }
 }
 
@@ -134,16 +203,23 @@ function spawnObstaclesTop()
          }
 }
 
-function score(){
-  if(ballon.isTouching(barGroup) ){
+function Score(){
+  if(balloon.isTouching(barGroup) ){
     score = score+1;
   }
   textFont("algerian");
   textSize(30);
-  fill(yellow);
+  fill("yellow");
   text("Score: " +score, 250, 50)
 
 }
 
-
+function reset(){
+  gameState = PLAY;
+  gameOver.visible = false;
+  restart.visible = false;
+  topObstacleGroup.destroyEach();
+  bottomObstacleGroup.destroyEach();
+  score = 0;
+}
   
